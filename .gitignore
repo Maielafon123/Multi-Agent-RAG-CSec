@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+csecenv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Local / runtime
+qdrant_storage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
