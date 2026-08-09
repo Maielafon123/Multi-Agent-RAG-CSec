@@ -4,10 +4,14 @@
 
 ```mermaid
 flowchart TD
-    A[Код] --> B[Router]
-    B --> C[Scanner + Critic параллельно]
-    C --> D[Decider]
-    D --> E[Synthesizer]
+    A[Код пользователя] --> B[Router: классификация CWE]
+    B --> C[Параллельный запуск]
+    C --> D[Сканер: поиск в exploits]
+    C --> E[Критик: поиск в false_positives]
+    D --> F[Decider: вердикт]
+    E --> F
+    F --> G[Синтезатор: отчёт]
+    G --> H[Ответ пользователю]
 ```
 
 Из схемы реализовано: загрузка двух коллекций в Qdrant + функции поиска Scanner/Critic.
@@ -26,7 +30,7 @@ flowchart TD
 - Лимит ingest: `MVP_MAX_SAMPLES = 800` строк на коллекцию
 - В базе сейчас примерно: `exploits` ~4467 чанков, `false_positives` ~1242 чанка
 
-Для полной модели (не MVP) ожидается смена эмбеддера и/или источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
+Для полной модели (не MVP) ожидается смена эмбеддера и источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
 
 ---
 
@@ -132,19 +136,6 @@ Retrieval API + smoke-test на примере с `malloc`/`strcpy`.
 
 Зависимости MVP: `datasets`, `qdrant-client`, `sentence-transformers`, `langchain-text-splitters`, `langchain-core`, `tqdm`.
 
----
-
-### `NOTES.md`
-
-Рабочие заметки / черновики. Актуальное описание репозитория — этот `README.md`.
-
----
-
-### `csecenv/notebook/notebook_fp.ipynb`
-
-Ранний exploratory notebook: загрузка Juliet, просмотр `train`/`test`, конвертация в pandas. Боевой ingest уже в `.py` скриптах выше.
-
----
 
 ## Что лежит в Qdrant (контракт точки)
 
@@ -182,6 +173,6 @@ load_exploits.py
 load_false_positives.py
 search_test.py
 requirements.txt
-NOTES.md
-csecenv/notebook/notebook_fp.ipynb
 ```
+<img width="447" height="447" alt="images" src="https://github.com/user-attachments/assets/88456115-ff7f-44cb-978b-a85a28ac5385" />
+
