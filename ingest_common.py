@@ -1,65 +1,101 @@
-"""Shared ingest helpers for Juliet -> Qdrant."""
+"""Общие хелперы ingest: dataset.jsonl → чанки → Qdrant."""
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any, Literal
 from uuid import uuid4
 
-from datasets import load_dataset
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from tqdm import tqdm
 
-from config import JULIET_DATASET, MVP_CWES, MVP_MAX_SAMPLES, QDRANT_HOST, QDRANT_PORT
+from config import DATASET_PATH, MVP_CWES, MVP_MAX_SAMPLES, QDRANT_HOST, QDRANT_PORT
 from embeddings import embed_documents
 
+# bad — уязвимый код (exploits); good — безопасный (false_positives). Хотя дату ты парсила
 CodeKind = Literal["bad", "good"]
-_CWE_RE = re.compile(r"CWE(\d+)", re.IGNORECASE)
+_CWE_RE = re.compile(r"CWE-?(\d+)", re.IGNORECASE)
 
 
 def get_client() -> QdrantClient:
-    return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    """Клиент к локальному Qdrant."""
+    return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT) #Все в конфиге лежит
 
 
-def extract_cwe(filename: str) -> str | None:
-    """HF `class` is a label id, not CWE — parse CWE from the path instead."""
-    match = _CWE_RE.search(filename or "")
-    return match.group(1) if match else None
+def normalize_cwe(value: str | None) -> str | None:
+    """
+    Привести метку CWE к виду ``CWE78``.
+
+    Принимает варианты от Router/датасета: ``CWE-78``, ``CWE78``, ``78``.
+    ``unknown`` / пустое значение → ``None`` (без фильтра). Лучше проверить)))) ибо я мог плохо сделать
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "unknown":
+        return None
+    match = _CWE_RE.search(text)
+    if not match:
+        return text
+    return f"CWE{match.group(1)}"
 
 
-def load_juliet_rows(kind: CodeKind) -> list[dict[str, Any]]:
-    """Load Juliet rows and keep either vulnerable (bad) or safe (good) code."""
-    ds = load_dataset(JULIET_DATASET, split="train")
+def load_dataset_rows(kind: CodeKind) -> list[dict[str, Any]]:
+    """
+    Прочитать строки из ``data/dataset.jsonl`` нужного kind.
+
+    Учитывает опциональные фильтры ``MVP_CWES`` и ``MVP_MAX_SAMPLES`` из config.
+    """
+    if not DATASET_PATH.exists():
+        raise SystemExit(f"Dataset not found: {DATASET_PATH}")
+
     rows: list[dict[str, Any]] = []
+    with DATASET_PATH.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            item = json.loads(line)
+            if item.get("kind") != kind:
+                continue
 
-    for item in ds:
-        filename = item.get("filename", "")
-        cwe = extract_cwe(filename)
-        if cwe is None:
-            continue
-        if MVP_CWES and int(cwe) not in MVP_CWES:
-            continue
+            cwe = normalize_cwe(item.get("cwe"))
+            if cwe is None:
+                continue
+            if MVP_CWES:
+                allowed = {normalize_cwe(x) for x in MVP_CWES}
+                if cwe not in allowed:
+                    continue
 
-        code = (item.get(kind) or "").strip()
-        if not code:
-            continue
+            code = (item.get("code") or "").strip()
+            if not code:
+                continue
 
-        rows.append(
-            {
-                "code": code,
-                "cwe": cwe,
-                "filename": filename,
-                "source": "juliet",
-                "kind": kind,
-            }
-        )
-        if len(rows) >= MVP_MAX_SAMPLES:
-            break
+            rows.append(
+                {
+                    "code": code,
+                    "cwe": cwe,
+                    "filename": item.get("filename", ""),
+                    "function_name": item.get("function_name", ""),
+                    "label": item.get("label", ""),
+                    "source": "dataset.jsonl",
+                    "kind": kind,
+                }
+            )
+            if MVP_MAX_SAMPLES is not None and len(rows) >= MVP_MAX_SAMPLES:
+                break
 
     return rows
 
+
 def chunk_rows(rows: list[dict[str, Any]], splitter) -> list[dict[str, Any]]:
+    """
+    Разрезать код на чанки выбранным сплиттером.
+
+    Метаданные строки (cwe, filename, label, …) копируются в каждый чанк.
+    """
     chunks: list[dict[str, Any]] = []
     for row in rows:
         pieces = splitter.split_text(row["code"])
@@ -69,6 +105,8 @@ def chunk_rows(rows: list[dict[str, Any]], splitter) -> list[dict[str, Any]]:
                     "code": piece,
                     "cwe": row["cwe"],
                     "filename": row["filename"],
+                    "function_name": row.get("function_name", ""),
+                    "label": row.get("label", ""),
                     "source": row["source"],
                     "kind": row["kind"],
                     "chunk_index": idx,
@@ -82,6 +120,11 @@ def upsert_chunks(
     chunks: list[dict[str, Any]],
     batch_size: int = 64,
 ) -> None:
+    """
+    Посчитать эмбеддинги чанков и записать их в коллекцию Qdrant.
+
+    Каждая точка: vector + payload (code, cwe, filename, function_name, label, …).
+    """
     if not chunks:
         raise SystemExit(f"No chunks to upsert into {collection_name}")
 
@@ -103,6 +146,8 @@ def upsert_chunks(
                     "code": chunk["code"],
                     "cwe": chunk["cwe"],
                     "filename": chunk["filename"],
+                    "function_name": chunk["function_name"],
+                    "label": chunk["label"],
                     "source": chunk["source"],
                     "kind": chunk["kind"],
                     "chunk_index": chunk["chunk_index"],
