@@ -1,4 +1,4 @@
-"""Create Qdrant collections for Scanner (/exploits) and Critic (/false_positives)."""
+"""Создание коллекций Qdrant для Сканера (exploits) и Критика (false_positives)."""
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -13,6 +13,12 @@ from config import (
 
 
 def ensure_collection(client: QdrantClient, name: str) -> None:
+    """
+    Создать коллекцию, если её ещё нет.
+
+    Векторы: размер VECTOR_SIZE, метрика cosine.
+    Индекс по payload ``cwe`` нужен фильтру Сканера.
+    """
     existing = {c.name for c in client.get_collections().collections}
     if name in existing:
         print(f"[skip] collection already exists: {name}")
@@ -25,7 +31,7 @@ def ensure_collection(client: QdrantClient, name: str) -> None:
             distance=models.Distance.COSINE,
         ),
     )
-    # Payload indexes for Scanner CWE filtering.
+    # Ускоряет и стабилизирует filter по CWE при поиске Scanner.
     client.create_payload_index(
         collection_name=name,
         field_name="cwe",
@@ -35,6 +41,7 @@ def ensure_collection(client: QdrantClient, name: str) -> None:
 
 
 def main() -> None:
+    """Создать обе коллекции MVP и вывести ссылку на dashboard."""
     client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
     ensure_collection(client, COLLECTION_EXPLOITS)
     ensure_collection(client, COLLECTION_FALSE_POSITIVES)
