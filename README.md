@@ -23,14 +23,15 @@ flowchart TD
 - Векторная БД: Qdrant
 - Эмбеддинги: `BAAI/bge-small-en-v1.5` (dim **384**, cosine, `normalize_embeddings=True`)
 - Префиксы BGE: документы `passage:`, запросы `query:`
-- Датасет MVP: HuggingFace `LorenzH/juliet_test_suite_c_1_3`
-  - поле `bad` → `exploits`
-  - поле `good` → `false_positives`
-  - CWE парсится из `filename` (`CWE126_...` → `"126"`), поле HF `class` **не** используется как CWE
-- Лимит ingest: `MVP_MAX_SAMPLES = 800` строк на коллекцию
-- В базе сейчас примерно: `exploits` ~4467 чанков, `false_positives` ~1242 чанка
+- Датасет MVP: `data/dataset.jsonl` (баланс от Насти, Juliet C/C++)
+  - `kind=bad` → `exploits`
+  - `kind=good` → `false_positives`
+  - 5 CWE: 78, 134, 190, 23, 476 — по 474 bad + 474 good
+  - CWE в payload в форме `CWE78` (Router `CWE-78` нормализуется)
+- `MVP_MAX_SAMPLES = None` → грузим весь jsonl
+- После re-ingest ожидай ~тысячи чанков в каждой коллекции (зависит от сплиттеров)
 
-Для полной модели (не MVP) ожидается смена эмбеддера и источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
+Для полной модели (не MVP) ожидается смена эмбеддера и/или источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
 
 ---
 
@@ -44,9 +45,9 @@ flowchart TD
 - имена коллекций: `exploits`, `false_positives`
 - `EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"`
 - `VECTOR_SIZE = 384`
-- `JULIET_DATASET = "LorenzH/juliet_test_suite_c_1_3"`
+- `DATASET_PATH = data/dataset.jsonl`
 - `MVP_CWES` — опциональный фильтр CWE (пустой set = все)
-- `MVP_MAX_SAMPLES = 800`
+- `MVP_MAX_SAMPLES = None` (весь датасет)
 - два сплиттера:
   - **exploits:** `RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=128)`
   - **false_positives:** `chunk_size=1024, chunk_overlap=256`  
@@ -80,11 +81,11 @@ flowchart TD
 
 Общая логика ingest (используется обоими load-скриптами).
 
-- `load_juliet_rows("bad"|"good")` — читает HF Juliet, режет по `MVP_CWES` / `MVP_MAX_SAMPLES`, достаёт CWE из `filename`
-- `chunk_rows(rows, splitter)` — режет код выбранным сплиттером, копирует метаданные в каждый чанк
-- `upsert_chunks(collection_name, chunks)` — считает эмбеддинги через `embed_documents`, пишет в Qdrant батчами
-- payload точки: `code`, `cwe`, `filename`, `source`, `kind`, `chunk_index`
-- id точки: UUID
+- `normalize_cwe(...)` — `CWE-78` / `78` / `CWE78` → `CWE78`
+- `load_dataset_rows("bad"|"good")` — читает `data/dataset.jsonl`
+- `chunk_rows(rows, splitter)` — режет код выбранным сплиттером
+- `upsert_chunks(collection_name, chunks)` — эмбеддинги + upsert
+- payload: `code`, `cwe`, `filename`, `function_name`, `label`, `source`, `kind`, `chunk_index`
 
 ---
 
@@ -92,10 +93,9 @@ flowchart TD
 
 Загрузка коллекции **Сканера** (`exploits`).
 
-- вход: Juliet, поле `bad`
+- вход: `dataset.jsonl`, `kind=bad`
 - сплиттер: exploits 512 / 128
-- эмбеддинг: тот же BGE small (`passage:`)
-- выход: точки в коллекции `exploits`
+- эмбеддинг: BGE small (`passage:`)
 
 ---
 
@@ -103,22 +103,21 @@ flowchart TD
 
 Загрузка коллекции **Критика** (`false_positives`).
 
-- вход: Juliet, поле `good`
-- сплиттер: FP 1024 / 256 (отдельно от exploits)
-- эмбеддинг: тот же BGE small (`passage:`)
-- выход: точки в коллекции `false_positives`
+- вход: `dataset.jsonl`, `kind=good`
+- сплиттер: FP 1024 / 256
+- эмбеддинг: BGE small (`passage:`)
 
 ---
 
 ### `search_test.py`
 
-Retrieval API + smoke-test на примере с `malloc`/`strcpy`.
+Retrieval API + smoke-test (пример path traversal / CWE23).
 
 **`search_exploits(code, cwe=None, limit=3)`** — Сканер
 
 - коллекция: `exploits`
 - query-эмбеддинг: BGE + `query:`
-- опциональный filter по payload `cwe` (строка вида `"126"`)
+- опциональный filter по payload `cwe` (`"CWE23"` после normalize)
 - возвращает hits с score и payload
 
 **`search_false_positives(code, limit=3)`** — Критик
@@ -143,9 +142,9 @@ Retrieval API + smoke-test на примере с `malloc`/`strcpy`.
 
 - `vector` — float[384]
 - `payload.code` — текст чанка
-- `payload.cwe` — `"126"` (без префикса `CWE-`)
-- `payload.filename`
-- `payload.source` — сейчас `"juliet"`
+- `payload.cwe` — `"CWE78"`
+- `payload.filename`, `payload.function_name`, `payload.label`
+- `payload.source` — `"dataset.jsonl"`
 - `payload.kind` — `"bad"` или `"good"`
 - `payload.chunk_index`
 
@@ -155,9 +154,9 @@ Retrieval API + smoke-test на примере с `malloc`/`strcpy`.
 
 - Две коллекции, два чанкинга, один эмбеддер MVP.
 - Critic не фильтрует по CWE Router’а.
-- Scanner умеет фильтровать по CWE, если передать номер в формате payload (`"126"`).
-- Модель эмбеддингов для полной версии будет меняться → нужны новый `VECTOR_SIZE`, recreate коллекций и полный re-ingest.
-- Big-Vul в MVP ещё не подключён; `/exploits` сейчас из Juliet `bad`.
+- Scanner фильтрует по CWE; `normalize_cwe` принимает `CWE-78` / `CWE78` / `78`.
+- Модель эмбеддингов для полной версии может смениться → recreate + re-ingest.
+- Big-Vul пока не подключён; источник MVP — `data/dataset.jsonl`.
 
 ---
 
