@@ -4,3 +4,4 @@ sentence-transformers>=3.0.0
 langchain-text-splitters>=0.3.0
 langchain-core>=0.3.0
 tqdm>=4.66.0
+langchain-ollama>=0.2.0
