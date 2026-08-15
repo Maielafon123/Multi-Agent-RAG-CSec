@@ -14,7 +14,7 @@ flowchart TD
     G --> H[Ответ пользователю]
 ```
 
-Из схемы реализовано: загрузка двух коллекций в Qdrant + функции поиска Scanner/Critic.
+Из схемы реализовано: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), простой Decider и eval retrieval-метрик.
 
 ---
 
@@ -23,13 +23,14 @@ flowchart TD
 - Векторная БД: Qdrant
 - Эмбеддинги: `BAAI/bge-small-en-v1.5` (dim **384**, cosine, `normalize_embeddings=True`)
 - Префиксы BGE: документы `passage:`, запросы `query:`
-- Датасет MVP: `data/dataset.jsonl` (баланс от Насти, Juliet C/C++)
-  - `kind=bad` → `exploits`
-  - `kind=good` → `false_positives`
-  - 5 CWE: 78, 134, 190, 23, 476 — по 474 bad + 474 good
-  - CWE в payload в форме `CWE78` (Router `CWE-78` нормализуется)
+- Router: `qwen2.5-coder:7b` через Ollama (`router.py`)
+- Датасет MVP: `data/dataset.jsonl` (Juliet C/C++, подготовка Насти)
+  - `kind=bad` → `exploits`, `kind=good` → `false_positives`
+  - 5 CWE: 78, 134, 190, 23, 476
+  - после чистки: bad ≈ 1741, good = 2370 (убраны source-only и `POTENTIAL FLAW`)
+  - CWE в payload: `CWE78` (Router отдаёт `CWE-78`, нормализуется)
 - `MVP_MAX_SAMPLES = None` → грузим весь jsonl
-- После re-ingest ожидай ~тысячи чанков в каждой коллекции (зависит от сплиттеров)
+- Eval: `evals/` (recall@k, decision accuracy → `results.jsonl` / MLflow)
 
 Для полной модели (не MVP) ожидается смена эмбеддера и/или источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
 
@@ -171,7 +172,27 @@ ingest_common.py
 load_exploits.py
 load_false_positives.py
 search_test.py
+router.py
+test_router.py
+decider.py
+evals/
+  build_cases.py
+  eval_retrieval.py
+  cases.jsonl
+data/dataset.jsonl
 requirements.txt
 ```
-<img width="447" height="447" alt="images" src="https://github.com/user-attachments/assets/88456115-ff7f-44cb-978b-a85a28ac5385" />
 
+### Eval / метрики
+
+```powershell
+.\csecenv\Scripts\python.exe evals\build_cases.py
+.\csecenv\Scripts\python.exe evals\eval_retrieval.py
+```
+
+Пишет:
+- `evals/results.jsonl` — история прогонов
+- `mlruns/` — если установлен MLflow
+
+Считаем сейчас: Scanner/Critic recall@k, mean top-1 cosine, decision accuracy (proxy Decider).  
+`faithfulness` / `router_accuracy` зарезервированы до Синтезатора и полного Router-eval.
