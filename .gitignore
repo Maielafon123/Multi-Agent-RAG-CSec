@@ -4,7 +4,7 @@ __pycache__/
 *.egg-info/
 .venv/
 csecenv/
-.venv/
+venv/
 
 # IDE
 .idea/
@@ -19,4 +19,8 @@ Thumbs.db
 # Env / secrets
 .env
 .env.*
-venv/
+
+# Experiment tracking
+mlruns/
+evals/results.jsonl
+evals/__pycache__/
