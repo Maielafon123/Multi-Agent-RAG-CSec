@@ -1,6 +1,6 @@
 # Multi-Agent RAG — описание репозитория (MVP)
 
-Кратко: dual-RAG для аудита кода — коллекция уязвимых примеров (`exploits`) и коллекция безопасных/похожих на FP (`false_positives`). Сейчас готов retrieval-слой MVP. Эмбеддинг-модель для MVP — лёгкая; для полной версии планируется замена (например code-embedding вроде Jina Code).
+Кратко: dual-RAG для аудита кода — коллекция уязвимых примеров (`exploits`) и коллекция безопасных/похожих на FP (`false_positives`). Пайплайн MVP собран целиком (Router → Scanner/Critic → Decider → Synthesizer в LangGraph). Эмбеддинг-модель для MVP — лёгкая; для полной версии планируется замена (например code-embedding вроде Jina Code).
 
 ```mermaid
 flowchart TD
@@ -14,7 +14,7 @@ flowchart TD
     G --> H[Ответ пользователю]
 ```
 
-Из схемы реализовано: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), простой Decider, Синтезатор (Ollama) и eval retrieval- и synthesizer-метрик. Осталось: сборка полного графа в LangGraph, router_accuracy в eval, финальный интерфейс (FastAPI + Streamlit).
+Из схемы реализовано всё: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), Decider, Синтезатор (Ollama), полный граф в LangGraph (`graph.py`) и eval на всех уровнях (retrieval, synthesizer, граф e2e с router_accuracy). Осталось: финальный интерфейс (FastAPI + Streamlit), опционально смена эмбеддера / подключение Big-Vul.
 
 ---
 
@@ -31,7 +31,7 @@ flowchart TD
   - после чистки: bad ≈ 1741, good = 2370 (убраны source-only и `POTENTIAL FLAW`)
   - CWE в payload: `CWE78` (Router отдаёт `CWE-78`, нормализуется)
 - `MVP_MAX_SAMPLES = None` → грузим весь jsonl
-- Eval: `evals/` (retrieval: recall@k, decision accuracy; synthesizer: fallback/grounding/resolved accuracy → `results.jsonl` / MLflow)
+- Eval: `evals/` (retrieval: recall@k, decision accuracy; synthesizer: fallback/grounding/faithfulness/resolved accuracy; граф e2e: router_accuracy, resolved accuracy, latency → `results.jsonl` / MLflow)
 
 Для полной модели (не MVP) ожидается смена эмбеддера и/или источника `/exploits` (Big-Vul). После смены модели коллекции нужно пересоздать под новый `VECTOR_SIZE` и перезалить векторы.
 
@@ -147,9 +147,22 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 
 ---
 
+### `graph.py`
+
+Полный пайплайн в LangGraph: `START → router → (scanner ∥ critic) → decider → synthesizer → END`.
+
+- `GraphState` (TypedDict) накапливает данные по мере прохождения: `user_code`, `router_result`, `cwe_filter`, `exploit_hits`, `fp_hits`, `verdict`, `synthesizer_result`, `report_text`
+- каждый узел — тонкая обёртка над готовой функцией (`route`, `search_exploits`, `search_false_positives`, `decide_from_hits`, `synthesize`)
+- `scanner` и `critic` — параллельные ветки после `router`; `decider` ждёт обе
+- fallback Router'а (`no_match` / `low_confidence` → `cwe_filter=None`) не требует отдельной ветки: Scanner просто ищет без фильтра по всей базе, дальше единственный путь
+- `analyze_code(user_code)` — точка входа для внешнего кода, возвращает финальный `GraphState`
+- `test_graph.py` — прогон на одном примере + дамп схемы графа в `graph_structure.md` (Mermaid)
+
+---
+
 ### `requirements.txt`
 
-Зависимости MVP: `datasets`, `qdrant-client`, `sentence-transformers`, `langchain-text-splitters`, `langchain-core`, `tqdm`, `langchain-ollama`, `mlflow`.
+Зависимости MVP: `datasets`, `qdrant-client`, `sentence-transformers`, `langchain-text-splitters`, `langchain-core`, `tqdm`, `langchain-ollama`, `mlflow`, `langgraph`.
 
 
 ## Что лежит в Qdrant (контракт точки)
@@ -192,10 +205,14 @@ test_router.py
 decider.py
 synthesizer.py
 test_synthesizer.py
+graph.py
+test_graph.py
+graph_structure.md
 evals/
   build_cases.py
   eval_retrieval.py
   eval_synthesizer.py
+  eval_graph.py
   cases.jsonl
 data/dataset.jsonl
 requirements.txt
@@ -207,14 +224,26 @@ requirements.txt
 python evals/build_cases.py
 python evals/eval_retrieval.py
 python evals/eval_synthesizer.py
+python evals/eval_graph.py
 ```
 
 Пишет:
-- `evals/results.jsonl` — история прогонов (поле `component`: `"retrieval"` или `"synthesizer"`)
+- `evals/results.jsonl` — история прогонов (поле `component`: `"retrieval"`, `"synthesizer"` или `"graph_e2e"`)
 - `mlruns/` — если установлен MLflow (текущая версия MLflow требует `MLFLOW_ALLOW_FILE_STORE=true` для file-store backend, иначе логирование пропускается без падения скрипта)
 
 **Retrieval-метрики** (Scanner/Critic recall@k, mean top-1 cosine, decision accuracy — proxy Decider): recall 100%/100%, decision accuracy 85% на 20 кейсах (после чистки датасета от source-only функций и комментариев-подсказок — до чистки было 95%, разница объяснима: часть точности держалась на текстовых подсказках в коде, а не на структуре).
 
-**Synthesizer-метрики** (20 кейсов): fallback_rate 0%, grounding_rate 90% (отчёт ссылается на реальный найденный CWE), resolved_accuracy 100% (среди 17 не-inconclusive вердиктов), inconclusive_rate 15% (3 из 20 — конфликтные случаи, где Scanner и Critic оба нашли сильное сходство с противоположными примерами), avg_latency_sec ~80 (Ollama на CPU, qwen2.5-coder:7b).
+**Synthesizer-метрики** (`evals/eval_synthesizer.py`, 20 кейсов, пишет `component: "synthesizer"` с вложенными `overall` и `by_cwe`):
 
-`faithfulness` (сквозная проверка отчёта против исходного кода) и `router_accuracy` зарезервированы до полной сборки LangGraph-графа.
+- `fallback_rate` 0% — LLM всегда возвращает валидный JSON, шаблонный fallback не срабатывал
+- `grounding_rate` ~80% — отчёт называет реальный найденный CWE (на выборке из 20 прогон-к-прогону гуляет 75–95%)
+- `faithfulness_rate` ~60% — отчёт цитирует конкретный идентификатор/операцию из найденного кода, а не только категорию CWE (новая, более строгая метрика; на 20 кейсах шумит 40–80%)
+- `resolved_accuracy` 100% — среди 17 не-inconclusive вердиктов
+- `inconclusive_rate` 15% — 3 из 20, конфликт Scanner/Critic (оба нашли сильное сходство с противоположными примерами); почти весь вклад — CWE-134 (2 из 4)
+- `avg_synth_only_latency_sec` ~38 (qwen2.5-coder:7b на CPU; ранние «холодные» прогоны давали ~80), `avg_cycle_latency_sec` — то же плюс retrieval
+
+**Граф e2e** (`evals/eval_graph.py`, гоняет полный `graph.analyze_code` на тех же 20 кейсах, пишет `component: "graph_e2e"`):
+
+- `router_accuracy` 70% — 14 из 20 (по CWE: 78 — 100%, 134 и 23 — 75%, 190 и 476 — 50%)
+- `resolved_accuracy` 100% (17 не-inconclusive), `inconclusive_rate` 15% — совпадает с уровнем Synthesizer'а, граф ничего не ломает
+- `avg_total_latency_sec` ~54 на кейс (Router + retrieval + Decider + Synthesizer)
