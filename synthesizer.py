@@ -56,8 +56,15 @@ SYNTHESIZER_SYSTEM_PROMPT = """Ты — синтезатор отчётов в �
   однозначно классифицировать этот код, кратко опиши ОБА сходства (с чем
   похоже на опасное, с чем на безопасное) и порекомендуй ручную проверку.
 
+ОБЯЗАТЕЛЬНО для explanation, при любом вердикте: назови КОНКРЕТНЫЙ элемент
+из показанного кода — имя функции, имя переменной, или саму опасную операцию
+(например "умножение data * data", "разыменование указателя ptr", "вызов
+system()"). НЕДОСТАТОЧНО просто назвать категорию CWE в общих словах — нужна
+привязка к конкретной строке/операции/идентификатору из реального кода, даже
+если это простое арифметическое выражение, а не вызов функции.
+
 Формат ответа — СТРОГО валидный JSON, без markdown-разметки, без текста вне JSON:
-{"summary": "1-2 предложения, суть для пользователя", "explanation": "подробнее, 2-4 предложения, со ссылкой на конкретные находки", "recommendation": "что делать дальше"}
+{"summary": "1-2 предложения, суть для пользователя", "explanation": "подробнее, 2-4 предложения, с явной ссылкой на конкретный элемент кода (функцию/переменную/операцию)", "recommendation": "что делать дальше"}
 """
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -96,13 +103,10 @@ class SynthesizerResult:
 
 
 def _get_llm(model: str = SYNTHESIZER_MODEL) -> ChatOllama:
-    # temperature чуть выше нуля, чем у Router'а — тут нужна связная
-    # человеческая формулировка текста, не жёсткая детерминированная метка
     return ChatOllama(model=model, temperature=0.2, format="json")
 
 
 def _hit_summary(hit: Any) -> dict:
-    """Достаёт нужные поля из Qdrant hit (ScoredPoint) в простой dict."""
     if hit is None:
         return {}
     payload = getattr(hit, "payload", {}) or {}
@@ -150,8 +154,6 @@ _FALLBACK_TEMPLATES = {
 
 
 def _fallback_result(verdict: str, reason: str, top_exploit: dict, top_fp: dict) -> SynthesizerResult:
-    """Если LLM недоступна или вернула невалидный JSON — простой шаблонный
-    отчёт, чтобы граф не падал целиком из-за одного узла."""
     summary, explanation, recommendation = _FALLBACK_TEMPLATES.get(
         verdict, ("Не удалось сформировать отчёт.", reason, "Проверьте систему вручную.")
     )
@@ -170,8 +172,6 @@ def synthesize(
     fp_hits: list[Any],
     model: str = SYNTHESIZER_MODEL,
 ) -> SynthesizerResult:
-    """Главная точка входа. verdict уже посчитан через decider.decide_from_hits —
-    Синтезатор не переопределяет его, только строит объяснение вокруг него."""
     top_exploit = _hit_summary(exploit_hits[0]) if exploit_hits else {}
     top_fp = _hit_summary(fp_hits[0]) if fp_hits else {}
 
@@ -194,7 +194,7 @@ def synthesize(
         messages = [("system", SYNTHESIZER_SYSTEM_PROMPT), ("human", user_message)]
         response = llm.invoke(messages)
         raw = response.content
-    except Exception as exc:  # Ollama недоступна, сеть и т.п.
+    except Exception as exc:  
         logger.warning("Synthesizer: LLM недоступна: %s", exc)
         return _fallback_result(verdict, f"LLM error: {exc}", top_exploit, top_fp)
 
@@ -234,5 +234,5 @@ if __name__ == "__main__":
     result = synthesize(sample_code, verdict, exploit_hits, fp_hits)
 
     print(json.dumps(result.to_log_dict(), indent=2, ensure_ascii=False))
-    print("\n--- ОТЧЁТ ДЛЯ ПОЛЬЗОВАТЕЛЯ ---\n")
+    print("\n ОТЧЁТ ДЛЯ ПОЛЬЗОВАТЕЛЯ\n")
     print(result.to_report_text())
