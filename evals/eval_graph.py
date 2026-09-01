@@ -1,12 +1,19 @@
-"""End-to-end eval полного графа router_accuracy +
-resolved accuracy + латентность всего пайплайна
-Метрики:
-  - grounding_rate
-  - faithfulness_rate
-  - fallback_rate
-  - resolved_accuracy
-  - inconclusive_rate
-  - avg_cycle_latency_sec
+"""End-to-end eval полного графа (graph.analyze_code) на evals/cases.jsonl.
+
+Считаем router_accuracy, resolved_accuracy, inconclusive_rate и
+avg_total_latency_sec — в aggregate overall и в разбивке by_cwe.
+
+Метрики (overall / by_cwe):
+  - router_accuracy — Router primary_cwe совпал с expected_cwe
+  - resolved_accuracy — среди verdict != inconclusive доля совпадений
+    с expected_decision
+  - inconclusive_rate — доля inconclusive от Decider
+  - avg_total_latency_sec — полный цикл Router + retrieval + Decider +
+    Synthesizer на один кейс
+
+Grounding / faithfulness / fallback_rate здесь не считаются — они в
+evals/eval_synthesizer.py. Результат дописывается в evals/results.jsonl
+(component=graph_e2e) и опционально логируется в MLflow.
 """
 
 import json
