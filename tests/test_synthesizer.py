@@ -5,11 +5,16 @@
 """
 
 import json
+import sys
 from pathlib import Path
 
-from decider import decide_from_hits
-from search_test import search_exploits, search_false_positives
-from synthesizer import synthesize
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from csec.decider import decide_from_hits
+from csec.search import search_exploits, search_false_positives
+from csec.synthesizer import synthesize
 
 CASES_PATH = Path("evals/cases.jsonl")
 SAMPLE_SIZE = 20  # сколько кейсов каждого типа брать (vulnerable / false_positive)

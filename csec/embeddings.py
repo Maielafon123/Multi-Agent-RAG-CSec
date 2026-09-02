@@ -6,7 +6,7 @@ from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
 
-from config import EMBEDDING_MODEL
+from csec.config import EMBEDDING_MODEL
 
 
 @lru_cache(maxsize=1)

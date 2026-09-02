@@ -10,7 +10,7 @@ from fastapi import Depends, FastAPI
 from api.deps import check_ollama, check_qdrant, require_ready
 from api.schemas import AnalyzeRequest, AnalyzeResponse, HealthResponse, ReadyResponse
 from api.serializers import state_to_response
-from graph import build_graph
+from csec.graph import build_graph
 
 
 @asynccontextmanager

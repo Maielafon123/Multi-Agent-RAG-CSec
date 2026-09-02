@@ -9,8 +9,8 @@ import urllib.request
 from fastapi import HTTPException
 from qdrant_client import QdrantClient
 
-from config import COLLECTION_EXPLOITS, QDRANT_HOST, QDRANT_PORT
-from router import ROUTER_MODEL
+from csec.config import COLLECTION_EXPLOITS, QDRANT_HOST, QDRANT_PORT
+from csec.router import ROUTER_MODEL
 
 OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 CHECK_TIMEOUT_SEC = 3

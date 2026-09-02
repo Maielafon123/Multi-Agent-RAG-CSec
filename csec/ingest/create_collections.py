@@ -3,7 +3,7 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
-from config import (
+from csec.config import (
     COLLECTION_EXPLOITS,
     COLLECTION_FALSE_POSITIVES,
     QDRANT_HOST,
