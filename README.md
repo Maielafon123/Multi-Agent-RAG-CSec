@@ -14,7 +14,7 @@ flowchart TD
     G --> H[Ответ пользователю]
 ```
 
-Из схемы реализовано всё: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), Decider, Синтезатор (Ollama), полный граф в LangGraph (`graph.py`) и eval на всех уровнях (retrieval, synthesizer, граф e2e с router_accuracy). Осталось: финальный интерфейс (FastAPI + Streamlit), опционально смена эмбеддера / подключение Big-Vul.
+Из схемы реализовано всё: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), Decider, Синтезатор (Ollama), полный граф в LangGraph (`graph.py`), eval на всех уровнях (retrieval, synthesizer, граф e2e с router_accuracy), **FastAPI** (`api/`) и **Streamlit** (`streamlit_app.py`). Дальше: hybrid retrieval (BM25), смена эмбеддера, Big-Vul.
 
 ---
 
@@ -208,11 +208,18 @@ test_synthesizer.py
 graph.py
 test_graph.py
 graph_structure.md
+api/
+  main.py
+  schemas.py
+  serializers.py
+  deps.py
+streamlit_app.py
 evals/
   build_cases.py
   eval_retrieval.py
   eval_synthesizer.py
   eval_graph.py
+  benchmark_device.py
   cases.jsonl
 data/dataset.jsonl
 requirements.txt
@@ -226,6 +233,20 @@ python evals/eval_retrieval.py
 python evals/eval_synthesizer.py
 python evals/eval_graph.py
 ```
+
+### Запуск MVP (API + UI)
+
+```bash
+docker start qdrant
+# Ollama с qwen2.5-coder:7b
+
+uvicorn api.main:app --host 127.0.0.1 --port 8000
+streamlit run streamlit_app.py
+```
+
+- Swagger: http://127.0.0.1:8000/docs  
+- Streamlit: http://localhost:8501  
+- `POST /analyze` — `{ "code": "...", "include_debug": false }`
 
 Пишет:
 - `evals/results.jsonl` — история прогонов (поле `component`: `"retrieval"`, `"synthesizer"` или `"graph_e2e"`)
