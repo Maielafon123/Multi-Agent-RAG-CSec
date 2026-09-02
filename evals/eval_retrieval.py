@@ -19,20 +19,20 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from config import (  # noqa: E402
+from csec.config import (  # noqa: E402
     DATASET_PATH,
     EMBEDDING_MODEL,
     EXPLOIT_SPLITTER,
     FP_SPLITTER,
     MVP_MAX_SAMPLES,
 )
-from decider import (  # noqa: E402
+from csec.decider import (  # noqa: E402
     EXPLOIT_SCORE_THRESHOLD,
     FP_SCORE_THRESHOLD,
     decide_from_hits,
 )
-from ingest_common import normalize_cwe  # noqa: E402
-from search_test import search_exploits, search_false_positives  # noqa: E402
+from csec.ingest.common import normalize_cwe  # noqa: E402
+from csec.search import search_exploits, search_false_positives  # noqa: E402
 
 CASES_PATH = Path(__file__).resolve().parent / "cases.jsonl"
 RESULTS_PATH = Path(__file__).resolve().parent / "results.jsonl"

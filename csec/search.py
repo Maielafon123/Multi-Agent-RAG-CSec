@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from qdrant_client.http import models
 
-from config import COLLECTION_EXPLOITS, COLLECTION_FALSE_POSITIVES
-from embeddings import embed_query
-from ingest_common import get_client, normalize_cwe
+from csec.config import COLLECTION_EXPLOITS, COLLECTION_FALSE_POSITIVES
+from csec.embeddings import embed_query
+from csec.ingest.common import get_client, normalize_cwe
 
 # Пример запроса под MVP CWE23 (path traversal).
 SAMPLE_QUERY = """

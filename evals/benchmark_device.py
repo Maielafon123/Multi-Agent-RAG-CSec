@@ -21,14 +21,14 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from sentence_transformers import SentenceTransformer
 
-from config import (
+from csec.config import (
     COLLECTION_EXPLOITS,
     COLLECTION_FALSE_POSITIVES,
     EMBEDDING_MODEL,
     QDRANT_HOST,
     QDRANT_PORT,
 )
-from ingest_common import normalize_cwe
+from csec.ingest.common import normalize_cwe
 
 CASES_PATH = Path(__file__).resolve().parent / "cases.jsonl"
 WARMUP = 2
