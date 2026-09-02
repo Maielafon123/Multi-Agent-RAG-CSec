@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from typing import Any
-from graph import GraphState
+from csec.graph import GraphState
 from api.schemas import AnalyzeResponse, DebugInfo, HitInfo, Report, RouterInfo
 
 # Сколько символов кода из hit отдаём в debug-ответе.

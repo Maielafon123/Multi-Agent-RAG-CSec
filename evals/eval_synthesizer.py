@@ -27,9 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from decider import decide_from_hits
-from search_test import search_exploits, search_false_positives
-from synthesizer import synthesize
+from csec.decider import decide_from_hits
+from csec.search import search_exploits, search_false_positives
+from csec.synthesizer import synthesize
 
 CASES_PATH = Path("evals/cases.jsonl")
 RESULTS_PATH = Path("evals/results.jsonl")

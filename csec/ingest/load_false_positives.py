@@ -1,7 +1,7 @@
 """Загрузка безопасных примеров (kind=good) в коллекцию false_positives — RAG Критика."""
 
-from config import COLLECTION_FALSE_POSITIVES, FP_SPLITTER
-from ingest_common import chunk_rows, load_dataset_rows, upsert_chunks
+from csec.config import COLLECTION_FALSE_POSITIVES, FP_SPLITTER
+from csec.ingest.common import chunk_rows, load_dataset_rows, upsert_chunks
 
 
 def main() -> None:

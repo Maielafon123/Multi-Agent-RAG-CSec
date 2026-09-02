@@ -17,7 +17,7 @@ EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 VECTOR_SIZE = 384
 
 # Сбалансированный датасет Насти (bad/good по 5 CWE).
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = PROJECT_ROOT / "data" / "dataset.jsonl"
 
 # Пустой set = брать все CWE из jsonl. Пример: {"CWE78", "CWE134"}.
