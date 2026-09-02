@@ -216,8 +216,8 @@ def synthesize(
 
 
 if __name__ == "__main__":
-    from search_test import search_exploits, search_false_positives
-    from decider import decide_from_hits
+    from csec.decider import decide_from_hits
+    from csec.search import search_exploits, search_false_positives
 
     sample_code = """
     void run_command(char *user_input) {

@@ -14,7 +14,7 @@ flowchart TD
     G --> H[Ответ пользователю]
 ```
 
-Из схемы реализовано всё: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), Decider, Синтезатор (Ollama), полный граф в LangGraph (`graph.py`) и eval на всех уровнях (retrieval, synthesizer, граф e2e с router_accuracy). Осталось: финальный интерфейс (FastAPI + Streamlit), опционально смена эмбеддера / подключение Big-Vul.
+Из схемы реализовано всё: загрузка двух коллекций в Qdrant, поиск Scanner/Critic, Router (Ollama), Decider, Синтезатор (Ollama), полный граф в LangGraph (`csec/graph.py`), eval на всех уровнях (retrieval, synthesizer, граф e2e с router_accuracy), **FastAPI** (`api/`) и **Streamlit** (`ui/streamlit_app.py`). Дальше: hybrid retrieval (BM25), смена эмбеддера, Big-Vul.
 
 ---
 
@@ -39,7 +39,7 @@ flowchart TD
 
 ## Файлы проекта
 
-### `config.py`
+### `csec/config.py`
 
 Общие константы MVP.
 
@@ -57,7 +57,7 @@ flowchart TD
 
 ---
 
-### `embeddings.py`
+### `csec/embeddings.py`
 
 Обёртка над SentenceTransformer.
 
@@ -69,7 +69,7 @@ flowchart TD
 
 ---
 
-### `create_collections.py`
+### `csec/ingest/create_collections.py`
 
 Создаёт в Qdrant две коллекции, если их ещё нет.
 
@@ -79,7 +79,7 @@ flowchart TD
 
 ---
 
-### `ingest_common.py`
+### `csec/ingest/common.py`
 
 Общая логика ingest (используется обоими load-скриптами).
 
@@ -91,7 +91,7 @@ flowchart TD
 
 ---
 
-### `load_exploits.py`
+### `csec/ingest/load_exploits.py`
 
 Загрузка коллекции **Сканера** (`exploits`).
 
@@ -101,7 +101,7 @@ flowchart TD
 
 ---
 
-### `load_false_positives.py`
+### `csec/ingest/load_false_positives.py`
 
 Загрузка коллекции **Критика** (`false_positives`).
 
@@ -111,7 +111,7 @@ flowchart TD
 
 ---
 
-### `search_test.py`
+### `csec/search.py`
 
 Retrieval API + smoke-test (пример path traversal / CWE23).
 
@@ -133,7 +133,7 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 
 ---
 
-### `synthesizer.py`
+### `csec/synthesizer.py`
 
 Синтезатор — превращает вердикт Decider'а и находки Scanner/Critic в текстовый отчёт.
 
@@ -147,7 +147,7 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 
 ---
 
-### `graph.py`
+### `csec/graph.py`
 
 Полный пайплайн в LangGraph: `START → router → (scanner ∥ critic) → decider → synthesizer → END`.
 
@@ -156,7 +156,7 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 - `scanner` и `critic` — параллельные ветки после `router`; `decider` ждёт обе
 - fallback Router'а (`no_match` / `low_confidence` → `cwe_filter=None`) не требует отдельной ветки: Scanner просто ищет без фильтра по всей базе, дальше единственный путь
 - `analyze_code(user_code)` — точка входа для внешнего кода, возвращает финальный `GraphState`
-- `test_graph.py` — прогон на одном примере + дамп схемы графа в `graph_structure.md` (Mermaid)
+- `tests/test_graph.py` — прогон на одном примере + дамп схемы графа в `graph_structure.md` (Mermaid)
 
 ---
 
@@ -193,29 +193,48 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 
 ```text
 README.md
-config.py
-embeddings.py
-create_collections.py
-ingest_common.py
-load_exploits.py
-load_false_positives.py
-search_test.py
-router.py
-test_router.py
-decider.py
-synthesizer.py
-test_synthesizer.py
-graph.py
-test_graph.py
-graph_structure.md
+requirements.txt
+csec/                    # ядро: pipeline + retrieval + ingest
+  config.py
+  embeddings.py
+  decider.py
+  router.py
+  synthesizer.py
+  graph.py
+  search.py
+  ingest/
+    common.py
+    create_collections.py
+    load_exploits.py
+    load_false_positives.py
+api/                     # FastAPI
+  main.py
+  schemas.py
+  serializers.py
+  deps.py
+ui/
+  streamlit_app.py
+tests/
+  test_router.py
+  test_graph.py
+  test_synthesizer.py
 evals/
   build_cases.py
   eval_retrieval.py
   eval_synthesizer.py
   eval_graph.py
+  benchmark_device.py
   cases.jsonl
 data/dataset.jsonl
-requirements.txt
+graph_structure.md
+```
+
+### Ingest (из корня репо)
+
+```bash
+python -m csec.ingest.create_collections
+python -m csec.ingest.load_exploits
+python -m csec.ingest.load_false_positives
 ```
 
 ### Eval / метрики
@@ -226,6 +245,20 @@ python evals/eval_retrieval.py
 python evals/eval_synthesizer.py
 python evals/eval_graph.py
 ```
+
+### Запуск MVP (API + UI)
+
+```bash
+docker start qdrant
+# Ollama с qwen2.5-coder:7b
+
+uvicorn api.main:app --host 127.0.0.1 --port 8000
+streamlit run ui/streamlit_app.py
+```
+
+- Swagger: http://127.0.0.1:8000/docs  
+- Streamlit: http://localhost:8501  
+- `POST /analyze` — `{ "code": "...", "include_debug": false }`
 
 Пишет:
 - `evals/results.jsonl` — история прогонов (поле `component`: `"retrieval"`, `"synthesizer"` или `"graph_e2e"`)

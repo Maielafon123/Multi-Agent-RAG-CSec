@@ -2,9 +2,15 @@
 
 import json
 import random
+import sys
 from collections import defaultdict
 from pathlib import Path
-from router import route
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from csec.router import route
 
 DATASET_PATH = Path("data/dataset.jsonl")
 SAMPLES_PER_CWE = 3
