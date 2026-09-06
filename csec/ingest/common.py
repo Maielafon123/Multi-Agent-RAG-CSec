@@ -11,8 +11,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from tqdm import tqdm
 
-from config import DATASET_PATH, MVP_CWES, MVP_MAX_SAMPLES, QDRANT_HOST, QDRANT_PORT
-from embeddings import embed_documents
+from csec.config import DATASET_PATH, MVP_CWES, MVP_MAX_SAMPLES, QDRANT_HOST, QDRANT_PORT
+from csec.embeddings import embed_documents
 
 # bad — уязвимый код (exploits); good — безопасный (false_positives). Хотя дату ты парсила
 CodeKind = Literal["bad", "good"]

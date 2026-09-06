@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from graph import analyze_code
+from csec.graph import analyze_code
 
 CASES_PATH = Path("evals/cases.jsonl")
 RESULTS_PATH = Path("evals/results.jsonl")
