@@ -1,0 +1,279 @@
+{
+  "summary": {
+    "n_cases": 20,
+    "corpus_documents": 4111,
+    "near_threshold": 0.85,
+    "exact_duplicate_cases": 20,
+    "near_duplicate_cases": 20,
+    "same_function_cases": 20,
+    "same_project_cases": 20,
+    "clean_cases": 0
+  },
+  "details": [
+    {
+      "id": "CWE134_vuln_CWE134_CWE134_Uncontrolled_Format_String__char_console_vprintf_34_bad_6336.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_e50eff17eb8713955298a618"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_e50eff17eb8713955298a618",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE134_vuln_CWE134_CWE134_Uncontrolled_Format_String__char_connect_socket_fprintf_67b_badSink_6227.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_3c77af72ec7c45e4311bc837"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_3c77af72ec7c45e4311bc837",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE134_fp_CWE134_goodB2G_12516.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_f8fbff8293be240efda7301e"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_f8fbff8293be240efda7301e",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE134_fp_CWE134_goodG2B_8259.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_107241c32dae46382707ff83"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_107241c32dae46382707ff83",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE190_vuln_CWE190_badSink_13110.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_6ceff23534cf7472b78e5d3b"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_6ceff23534cf7472b78e5d3b",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE190_vuln_CWE190_badSink_9993.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_cb9e49ed79a04b3d4a118977"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_cb9e49ed79a04b3d4a118977",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE190_fp_CWE190_goodB2GSink_29867.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_6ea973cbdf694aa4c7693e99"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_6ea973cbdf694aa4c7693e99",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE190_fp_CWE190_goodG2BSink_22915.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_b10ee6c9349d10855404bce0"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_b10ee6c9349d10855404bce0",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE23_vuln_CWE23_bad_1200.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_17988a65324e18b5aa575a1e"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_17988a65324e18b5aa575a1e",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE23_vuln_CWE23_bad_14.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_8a58b722134746db88aa2f42",
+        "document_f77f55cfc16e13d170612f89"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_8a58b722134746db88aa2f42",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE23_fp_CWE23_goodG2B_3297.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_cc64b666ff08fb46e43b961c",
+        "document_d6766348fd3659e782f17e34",
+        "document_496fad16a534119f53d23acd"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_cc64b666ff08fb46e43b961c",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE23_fp_CWE23_goodG2B_3671.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_37eaa14a2914ecc53c544a02",
+        "document_40fc3c66ac8bcf1cd4e71ea4",
+        "document_8374f53af9566aacb366f01a"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_37eaa14a2914ecc53c544a02",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE476_vuln_CWE476_CWE476_NULL_Pointer_Dereference__binary_if_15_bad_14501.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_d539af147475a80acea377d0"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_d539af147475a80acea377d0",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE476_vuln_CWE476_CWE476_NULL_Pointer_Dereference__struct_16_bad_14833.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_2bd3725e1e749415e3d2e673"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_2bd3725e1e749415e3d2e673",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE476_fp_CWE476_goodG2B_31902.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_6caa7466ad2ef6833fe6a545"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_6caa7466ad2ef6833fe6a545",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE476_fp_CWE476_goodB2G1_32007.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_d66603d5a4381cf6303f3c0a"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_d66603d5a4381cf6303f3c0a",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE78_vuln_CWE78_badSink_18265.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_1a1168b2ec2f9501668242d4"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_1a1168b2ec2f9501668242d4",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE78_vuln_CWE78_CWE78_OS_Command_Injection__wchar_t_file_execl_65_bad_18529.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_c9e30cfabbcdefe8ea6c561e"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_c9e30cfabbcdefe8ea6c561e",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE78_fp_CWE78_goodG2B2_40273.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_3c11b4539ccbdc2d767bcad7"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_3c11b4539ccbdc2d767bcad7",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    },
+    {
+      "id": "CWE78_fp_CWE78_goodG2B2_39266.c",
+      "exact_duplicate": true,
+      "exact_matches": [
+        "document_72a1cceb4a5b16027f947f8b"
+      ],
+      "near_duplicate": true,
+      "best_jaccard": 1.0,
+      "best_document_id": "document_72a1cceb4a5b16027f947f8b",
+      "same_function": true,
+      "same_project": true,
+      "query_origin": "corpus_sample"
+    }
+  ]
+}

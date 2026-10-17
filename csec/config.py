@@ -19,6 +19,7 @@ VECTOR_SIZE = 384
 # Сбалансированный датасет Насти (bad/good по 5 CWE).
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = PROJECT_ROOT / "data" / "dataset.jsonl"
+METADATA_PATH = PROJECT_ROOT / "data" / "metadata_balanced.jsonl"
 
 # Пустой set = брать все CWE из jsonl. Пример: {"CWE78", "CWE134"}.
 MVP_CWES: set[str] = set()

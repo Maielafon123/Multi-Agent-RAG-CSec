@@ -176,6 +176,8 @@ Retrieval API + smoke-test (пример path traversal / CWE23).
 - `payload.source` — `"dataset.jsonl"`
 - `payload.kind` — `"bad"` или `"good"`
 - `payload.chunk_index`
+- стабильные ID: `payload.chunk_id`, `payload.document_id`, `payload.function_id`, `payload.project_id`
+- происхождение: `payload.source_dataset`, `payload.source_file`, `payload.split`
 
 ---
 
@@ -218,8 +220,13 @@ tests/
   test_router.py
   test_graph.py
   test_synthesizer.py
+  test_ingest_ids.py
+  test_eval_retrieval.py
+  test_leakage.py
 evals/
   build_cases.py
+  capture_baseline.py
+  check_leakage.py
   eval_retrieval.py
   eval_synthesizer.py
   eval_graph.py
@@ -241,6 +248,8 @@ python -m csec.ingest.load_false_positives
 
 ```bash
 python evals/build_cases.py
+python evals/check_leakage.py
+python evals/capture_baseline.py
 python evals/eval_retrieval.py
 python evals/eval_synthesizer.py
 python evals/eval_graph.py
@@ -264,7 +273,9 @@ streamlit run ui/streamlit_app.py
 - `evals/results.jsonl` — история прогонов (поле `component`: `"retrieval"`, `"synthesizer"` или `"graph_e2e"`)
 - `mlruns/` — если установлен MLflow (текущая версия MLflow требует `MLFLOW_ALLOW_FILE_STORE=true` для file-store backend, иначе логирование пропускается без падения скрипта)
 
-**Retrieval-метрики** (Scanner/Critic recall@k, mean top-1 cosine, decision accuracy — proxy Decider): recall 100%/100%, decision accuracy 85% на 20 кейсах (после чистки датасета от source-only функций и комментариев-подсказок — до чистки было 95%, разница объяснима: часть точности держалась на текстовых подсказках в коде, а не на структуре).
+**Retrieval-метрики v2** проверяют релевантность по `document_id`/`function_id`, а не по одному совпадению CWE: Recall@1/3/5, MRR@5, nDCG@5, mean top-1 cosine и decision accuracy. Один прогон считает Scanner и с CWE-фильтром, и без него; Critic в обоих режимах остаётся независимым. Старый показатель recall 100% был CWE-hit rate при фильтрации по ожидаемому CWE и не является честной retrieval-метрикой.
+
+Текущий `cases.jsonl` — технический corpus baseline. `check_leakage.py` ожидаемо показывает, что его 20 запросов присутствуют в индексируемом Juliet-корпусе. Для итоговой оценки нужен отдельный frozen test из ручных или внешних примеров; generated baseline нельзя использовать как доказательство обобщающей способности системы.
 
 **Synthesizer-метрики** (`evals/eval_synthesizer.py`, 20 кейсов, пишет `component: "synthesizer"` с вложенными `overall` и `by_cwe`):
 

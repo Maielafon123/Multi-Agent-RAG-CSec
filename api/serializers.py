@@ -23,6 +23,11 @@ def hit_to_info(hit: Any) -> HitInfo:
         cwe=payload.get("cwe"),
         filename=payload.get("filename"),
         code_snippet=snippet or None,
+        document_id=payload.get("document_id"),
+        function_id=payload.get("function_id"),
+        project_id=payload.get("project_id"),
+        source_dataset=payload.get("source_dataset"),
+        split=payload.get("split"),
     )
 
 
