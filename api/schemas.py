@@ -18,6 +18,11 @@ class HitInfo(BaseModel):
     cwe: str | None = None
     filename: str | None = None
     code_snippet: str | None = None
+    document_id: str | None = None
+    function_id: str | None = None
+    project_id: str | None = None
+    source_dataset: str | None = None
+    split: str | None = None
 
 class RouterInfo(BaseModel):
     primary_cwe: str | None = None
